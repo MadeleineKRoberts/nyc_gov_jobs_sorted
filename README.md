@@ -1,4 +1,5 @@
-# nyc_jobs_sorted
-Sorts, filters, and summarizes the job descriptions the NYC job board postings to allow for easier searching.
+# nyc_gov_jobs_sorted
+
+Makes finding relevant and updated jobs from the NYC gov easier by allowing sorting, filters, and summarizes Job Descriptions with Hugging Face transformer library.
 
 Potentially will expand + host to help others with the same problem: https://www.reddit.com/r/nycpublicservants/comments/1bayjkf/cityjobsnycgov_searching_and_sorting_issues/
