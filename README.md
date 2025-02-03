@@ -1,2 +1,2 @@
 # nyc_jobs_sorted
-Sorts and filters the NYC job board postings to allow for easier searching.
+Sorts, filters, and summarizes the job descriptions the NYC job board postings to allow for easier searching.
