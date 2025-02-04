@@ -1,71 +1,49 @@
-from flask import Flask, render_template_string
-import requests
+from flask import Flask, render_template, request
 import pandas as pd
+import requests
 
 app = Flask(__name__)
 
-# Base URL for the JSON data API
-base_url = "https://data.cityofnewyork.us/resource/kpav-sd4t.json"
+# NYC Jobs API URL
+API_URL = "https://data.cityofnewyork.us/resource/kpav-sd4t.json"
 
-# Parameters for pagination
-limit = 1000
-offset = 0
-all_data = []
-
-# Function to fetch data
 def fetch_data():
-    global offset
-    while True:
-        params = {
-            "$limit": limit,
-            "$offset": offset
-        }
-        
-        response = requests.get(base_url, params=params)
-        
-        if response.status_code == 200:
-            chunk_data = response.json()
-            if not chunk_data:
-                break
-            all_data.extend(chunk_data)
-            offset += limit
-        else:
-            print(f"Failed to retrieve data: {response.status_code}")
-            break
+    response = requests.get(API_URL)
+    if response.status_code == 200:
+        return response.json()
+    return []
 
-# Route to display the data in the browser
 @app.route('/')
 def index():
     # Fetch data and create the DataFrame
-    fetch_data()
+    all_data = fetch_data()
     df = pd.DataFrame(all_data)
 
     # Drop rows where 'Job ID' is NaN
     df = df.dropna(subset=['job_id'])
 
-    # Convert DataFrame to HTML
-    html_table = df.to_html(classes='table table-striped', index=False)
+    # Convert date fields to datetime for sorting
+    df['posting_updated'] = pd.to_datetime(df['posting_updated'], errors='coerce')
 
-    # Return the HTML content
-    return render_template_string("""
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>NYC Job Listings</title>
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        </head>
-        <body>
-            <div class="container mt-5">
-                <h1 class="text-center">NYC Job Listings</h1>
-                <div class="table-responsive">
-                    {{ html_table | safe }}
-                </div>
-            </div>
-        </body>
-        </html>
-    """, html_table=html_table)
+    # Define columns to display
+    cols_to_display = ['job_id', 'number_of_positions', 'business_title', 'job_category',
+        'full_time_part_time_indicator', 'career_level', 'salary_range_from',
+        'salary_range_to', 'division_work_unit', 'to_apply',
+        'posting_date', 'post_until', 'posting_updated'
+    ]
+    df = df[cols_to_display]
+
+    # Handle sorting
+    sort_order = request.args.get('sort', 'desc')  # Default: descending
+    df = df.sort_values(by='posting_updated', ascending=(sort_order == 'asc'))
+
+    # Handle search
+    search_query = request.args.get('search', '').strip().lower()
+    if search_query:
+        df = df[df['business_title'].str.lower().str.contains(search_query, na=False)]
+
+    return render_template('index.html', jobs=df.to_dict(orient='records'), sort_order=sort_order, search_query=search_query)
 
 if __name__ == '__main__':
     app.run(debug=True)
+
