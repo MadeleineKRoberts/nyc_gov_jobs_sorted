@@ -21,9 +21,11 @@ def index():
 
     # Drop rows where 'Job ID' is NaN
     df = df.dropna(subset=['job_id'])
+    df = df.drop_duplicates()
 
     # Convert date fields to datetime for sorting
     df['posting_updated'] = pd.to_datetime(df['posting_updated'], errors='coerce')
+    df['post_until'] = pd.to_datetime(df['post_until'], errors='coerce')
 
     # Define columns to display
     cols_to_display = ['job_id', 'number_of_positions', 'business_title', 'job_category',
